@@ -63,6 +63,18 @@ async def update_user(user: UserUpdateSchema, db: AsyncSession) -> User | NoRetu
     return user_db
 
 
+async def get_users(page: int, page_size: int, db: AsyncSession) -> list[User, ...]:
+    """Получение списка пользователей с пагинацией"""
+
+    query = select(User).offset(page*page_size).limit(page_size)
+
+    result = await db.execute(query)
+
+    users_db = list(result.scalars())
+
+    return users_db
+
+
 async def delete_user(user_id: uuid.UUID, db: AsyncSession) -> True | NoReturn:
     """Удаление пользователя"""
 

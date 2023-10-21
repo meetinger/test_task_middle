@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import app.db.crud.users_crud as user_crud
 from app.db.database import get_db
+from app.schemas.common_shemas import EntityList
 from app.schemas.users_schemas import UserFullSchema, UserCreateSchema, UserUpdateSchema
 
 users_router = APIRouter(tags=['users'])
@@ -18,12 +19,14 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return user_db
 
 
-# @users_router.get('/', response_model=UserFullSchema)
-# async def get_users(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-#     """Эндпоинт получения пользователей (READ)"""
-#
-#     user_db = await user_crud.get_user(user_id, db=db)
-#     return user_db
+@users_router.get('/', response_model=EntityList)
+async def get_users(page: int = Query(default=0, description='Номер страницы'),
+                    page_size: int = Query(default=10, description='Размер страницы(максимум 50)'), db: AsyncSession = Depends(get_db)):
+    """Эндпоинт получения пользователей (READ) с пагинацией"""
+    if page_size > 50:
+        page_size = 50
+    users_db = await user_crud.get_users(page, page_size, db=db)
+    return EntityList[UserFullSchema](entities=users_db)
 
 
 @users_router.post('/', response_model=UserFullSchema)

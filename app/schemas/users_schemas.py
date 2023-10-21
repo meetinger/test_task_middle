@@ -1,10 +1,13 @@
 import datetime
 import uuid
+from typing import Generic
 
 from pydantic import BaseModel, Field, EmailStr
 
+from app.schemas.common_shemas import Entity
 
-class UserCreateSchema(BaseModel):
+
+class UserCreateSchema(BaseModel, Generic[Entity]):
     """Схема для создания пользователя"""
     username: str | None = Field(description='Имя пользователя', default=None)
     email: EmailStr | None = Field(description='Email пользователя', default=None)
