@@ -51,3 +51,19 @@ async def delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
     user_db = await user_crud.delete_user(user_id, db=db)
     return user_db
+
+
+@users_router.get('/analytics')
+async def user_analytics(email_domain: str = Query(default='gmail.com', description='Домен электронной почты'),
+                         db: AsyncSession = Depends(get_db)):
+    """Эндпоинт с данными из различных функций из 2-ого задания"""
+
+    last_registered_users = await user_crud.get_count_last_7d_registered_users(db)
+    top_username_users = await user_crud.get_top5_users_with_longest_usernames(db)
+    email_domain_users = await user_crud.get_users_by_email_domain(email_domain, db=db)
+
+    return {
+        'last_registered_users': last_registered_users,
+        'top_username_users': top_username_users,
+        'email_domain_users': email_domain_users
+    }
