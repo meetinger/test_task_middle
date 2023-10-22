@@ -97,7 +97,7 @@ async def get_count_last_7d_registered_users(db: AsyncSession) -> int:
     query = select(count(User.id)).where(User.registration_date > dt.date.today()-dt.timedelta(days=7))
     result = await db.execute(query)
 
-    users_db = result.scalars().all()
+    users_db = result.scalar_one()
 
     return users_db
 
@@ -117,13 +117,18 @@ async def get_top5_users_with_longest_usernames(db: AsyncSession) -> list[User, 
     return users_db
 
 
-async def get_users_by_email_domain(domain: str, db: AsyncSession) -> list[User, ...]:
-    """Пользователи по доменному имени email"""
+async def get_rate_users_by_email_domain(domain: str, db: AsyncSession) -> float:
+    """
+    Пользователи по доменному имени email
+    В теории можно оптимизировать и сделать всё за 1 запрос к БД
 
-    query = select(User).where(User.email.ilike(f'%@{domain}'))
-    result = await db.execute(query)
+    """
 
-    users_db = result.scalars().all()
+    query_domain_count = select(count(User.id)).where(User.email.ilike(f'%@{domain}'))
+    query_all_user_count = select(count(User.id))
 
-    return users_db
+    domain_count = await db.execute(query_domain_count)
+    user_count = await db.execute(query_all_user_count)
+
+    return domain_count.scalar_one() / user_count.scalar_one()
 
