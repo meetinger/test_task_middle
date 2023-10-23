@@ -18,6 +18,11 @@ class Settings(BaseSettings):
 
     HTTP_PORT: int
 
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_MINUTES: int
+    SECRET_KEY: str
+    ALGORITHM: str
+
     model_config = SettingsConfigDict(env_file=ROOT_DIR.joinpath('.env'))
 
     def get_db_url(self, driver: str = 'asyncpg'):

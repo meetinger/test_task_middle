@@ -7,11 +7,12 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count
 
+from app.core.security import PasswordUtils
 from app.db.models import User
-from app.schemas.users_schemas import UserCreateSchema, UserUpdateSchema
+from app.schemas.users_schemas import UserCreateSchema, UserUpdateSchema, UserSchema
 
 
-async def check_duplicates(user: UserCreateSchema, db: AsyncSession) -> None | NoReturn:
+async def check_duplicates(user: UserSchema, db: AsyncSession) -> None | NoReturn:
     """Проверка на дубликаты username и email"""
 
     username_exist_query = select(User.id).where(User.username == user.username)
@@ -29,7 +30,8 @@ async def create_user(user: UserCreateSchema, db: AsyncSession) -> User | NoRetu
 
     await check_duplicates(user, db)
 
-    user_db = User(username=user.username, email=user.email)
+    user_db = User(username=user.username, email=user.email,
+                   password_hash=PasswordUtils.hash_password(user.password))
 
     db.add(user_db)
 
@@ -48,6 +50,19 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession) -> User | NoReturn:
     return user_db  # у SQLAlchemy проблемы с typehints, поэтому если ругается - не обращайте внимания
 
 
+async def get_user_by_username(username: str, db: AsyncSession) -> User | NoReturn:
+    """Получение пользователя по юзернейму"""
+
+    query = select(User).where(User.username == username)
+
+    result = await db.execute(query)
+    user_db = result.scalars().first()
+
+    if user_db is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
+    return user_db
+
+
 async def update_user(user: UserUpdateSchema, db: AsyncSession) -> User | NoReturn:
     """Обновление пользователя"""
 
@@ -60,6 +75,9 @@ async def update_user(user: UserUpdateSchema, db: AsyncSession) -> User | NoRetu
 
     if user.username is not None:
         user_db.username = user.username
+
+    if user.password is not None:
+        user_db.password_hash = PasswordUtils.hash_password(user.password)
 
     await db.commit()
     return user_db

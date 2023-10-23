@@ -5,14 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import app.db.crud.users_crud as user_crud
 from app.db.database import get_db
+from app.db.models import User
+from app.routes.v1.auth_routes import get_current_user
 from app.schemas.common_shemas import EntityList
-from app.schemas.users_schemas import UserFullSchema, UserCreateSchema, UserUpdateSchema
+from app.schemas.users_schemas import UserCreateSchema, UserUpdateSchema, UserOutSchema
 
 users_router = APIRouter(tags=['users'])
 
 
-@users_router.get('/{user_id:uuid}', response_model=UserFullSchema)
-async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@users_router.get('/{user_id:uuid}', response_model=UserOutSchema)
+async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
     """Эндпоинт получения пользователя (READ)"""
 
     user_db = await user_crud.get_user(user_id, db=db)
@@ -21,15 +24,18 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 @users_router.get('/', response_model=EntityList)
 async def get_users(page: int = Query(default=0, description='Номер страницы'),
-                    page_size: int = Query(default=10, description='Размер страницы(максимум 50)'), db: AsyncSession = Depends(get_db)):
+                    page_size: int = Query(default=10, description='Размер страницы(максимум 50)'),
+                    db: AsyncSession = Depends(get_db),
+                    current_user: User = Depends(get_current_user)
+                    ):
     """Эндпоинт получения пользователей (READ) с пагинацией"""
     if page_size > 50:
         page_size = 50
     users_db = await user_crud.get_users(page, page_size, db=db)
-    return EntityList[UserFullSchema](entities=users_db)
+    return EntityList[UserOutSchema](entities=users_db)
 
 
-@users_router.post('/', response_model=UserFullSchema)
+@users_router.post('/', response_model=UserOutSchema)
 async def create_user(user: UserCreateSchema, db: AsyncSession = Depends(get_db)):
     """Эндпоинт создания пользователя (CREATE)"""
 
@@ -37,24 +43,28 @@ async def create_user(user: UserCreateSchema, db: AsyncSession = Depends(get_db)
     return user_db
 
 
-@users_router.put('/', response_model=UserFullSchema)
-async def update_user(user: UserUpdateSchema, db: AsyncSession = Depends(get_db)):
+@users_router.put('/', response_model=UserOutSchema)
+async def update_user(user: UserUpdateSchema, db: AsyncSession = Depends(get_db),
+                      current_user: User = Depends(get_current_user)):
     """Эндпоинт обновления пользователя (UPDATE)"""
 
     user_db = await user_crud.update_user(user, db=db)
     return user_db
 
 
-@users_router.delete('/{user_id:uuid}', response_model=UserFullSchema)
-async def delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@users_router.delete('/{user_id:uuid}')
+async def delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                      current_user: User = Depends(get_current_user)
+                      ):
     """Эндпоинт удаления пользователя (DELETE)"""
 
-    user_db = await user_crud.delete_user(user_id, db=db)
-    return user_db
+    res = await user_crud.delete_user(user_id, db=db)
+    return {'delete': res}
 
 
 @users_router.get('/analytics')
 async def user_analytics(email_domain: str = Query(default='gmail.com', description='Домен электронной почты'),
+                         current_user: User = Depends(get_current_user),
                          db: AsyncSession = Depends(get_db)):
     """Эндпоинт с данными из различных функций из 2-ого задания"""
 
