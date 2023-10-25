@@ -10,8 +10,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 import app.db.crud.users_crud as user_crud
-from app.core.neuronal_network.dataset import UserActivityDataset
-from app.core.neuronal_network.net import Net
+from app.core.neuronal_network.pytorch_model.dataset import UserActivityDataset
+from app.core.neuronal_network.pytorch_model.net import Net
 from app.db.database import get_db_ctx
 
 
@@ -40,8 +40,8 @@ def train_iteration(full_dataset: UserActivityDataset, model: Net, device=torch.
     # optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
-    if os.path.isfile('model.pt'):
-        model.load_state_dict(torch.load('model.pt'))
+    if os.path.isfile('../model.pt'):
+        model.load_state_dict(torch.load('../model.pt'))
 
     train_losses = []
     valid_losses = []
@@ -103,7 +103,7 @@ def train_iteration(full_dataset: UserActivityDataset, model: Net, device=torch.
             print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
                 valid_loss_min,
                 valid_loss))
-            torch.save(model.state_dict(), 'model.pt')
+            torch.save(model.state_dict(), '../model.pt')
             valid_loss_min = valid_loss
 
     plt.clf()
@@ -120,8 +120,8 @@ def train_iteration(full_dataset: UserActivityDataset, model: Net, device=torch.
 async def main():
     net = Net()
 
-    if os.path.isfile('model.pt'):
-        net.load_state_dict(torch.load('model.pt'))
+    if os.path.isfile('../model.pt'):
+        net.load_state_dict(torch.load('../model.pt'))
 
     async with get_db_ctx() as db:
         user_db = await user_crud.get_user(uuid.UUID('713d523a-4265-40ec-b42f-3a6474236892'), db)
