@@ -1,7 +1,9 @@
 import datetime as dt
+import enum
 import uuid
 
-from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from app.db.database import Base
 
@@ -23,6 +25,15 @@ class User(Base):
 
 
 class UserActivity(Base):
+    """Модель активности пользователей"""
+
     __tablename__ = 'user_activity'
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, index=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(User.id), index=True)
+
+    user: Mapped[User] = relationship()
+
+    request_url: Mapped[str] = mapped_column(nullable=True, default=None)
+    request_type: Mapped[str] = mapped_column(nullable=True, default=None)
+    request_time: Mapped[dt.datetime] = mapped_column(default=dt.datetime.utcnow)

@@ -1,5 +1,6 @@
 import json
 from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -21,14 +22,9 @@ class Base(DeclarativeBase):
     pass
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncIterator[AsyncSession]:
     """Функция для получения объекта сессии БД"""
     async with async_session_factory() as db:
         yield db
 
-
-@asynccontextmanager
-async def get_db_ctx() -> AsyncSession:
-    """Асинхронный контекстный менеджер для других нужд"""
-    yield get_db()
-
+get_db_ctx = asynccontextmanager(get_db)

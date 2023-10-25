@@ -15,12 +15,13 @@ pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
 fastapi = "^0.104.0"
 numpy = "^1.26.1"
-torch = "^2.1.0"
+torch = ">=2.0.0, !=2.0.1, !=2.1.0"
 pandas = "^2.1.1"
 email-validator = "^2.0.0.post2"
 uvicorn = "^0.23.2"
 python-jose = "^3.3.0"
 passlib = "^1.7.4"
+matplotlib = "^3.8.0"
 
 
 [build-system]

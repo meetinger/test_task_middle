@@ -9,6 +9,7 @@ from sqlalchemy.sql.functions import count
 
 from app.core.security import PasswordUtils
 from app.db.models import User
+from app.db.models.users_models import UserActivity
 from app.schemas.users_schemas import UserCreateSchema, UserUpdateSchema, UserSchema
 
 
@@ -138,7 +139,7 @@ async def get_top5_users_with_longest_usernames(db: AsyncSession) -> list[User, 
 async def get_rate_users_by_email_domain(domain: str, db: AsyncSession) -> float:
     """
     Пользователи по доменному имени email
-    В теории можно оптимизировать и сделать всё за 1 запрос к БД
+    В теории можно оптимизировать и сделать всё за 1 запрос к БД используя функции sum
 
     """
 
@@ -150,3 +151,12 @@ async def get_rate_users_by_email_domain(domain: str, db: AsyncSession) -> float
 
     return domain_count.scalar_one() / user_count.scalar_one()
 
+
+async def get_user_activity(user: User, db: AsyncSession) -> list[UserActivity]:
+    """Получить всю активность пользователя"""
+
+    query = select(UserActivity).where(UserActivity.user_id == user.id).order_by(UserActivity.request_time)
+    res = await db.execute(query)
+    user_activities = res.scalars().all()
+
+    return user_activities
