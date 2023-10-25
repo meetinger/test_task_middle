@@ -23,17 +23,23 @@ class Net(nn.Module):
         self.num_layers = 2
         self.out_size = 1
 
-        self.lstm = nn.LSTM(input_size=self.input_size,
-                            hidden_size=self.hidden_size,
-                            num_layers=self.num_layers, batch_first=True)
-        self.fc = nn.Linear(self.hidden_size, self.out_size)
+        # self.lstm = nn.LSTM(input_size=self.input_size,
+        #                     hidden_size=self.hidden_size,
+        #                     num_layers=self.num_layers, batch_first=True)
+        self.fc = nn.Sequential(
+            nn.Linear(self.input_size, self.hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(self.hidden_size, self.hidden_size//2),
+            nn.LeakyReLU(),
+            nn.Linear(self.hidden_size//2, self.out_size),
+        )
 
     def forward(self, x):
 
-        lstm_out, _ = self.lstm(x)
+        # lstm_out, _ = self.lstm(x)
+        #
+        # lstm_out = lstm_out.contiguous().view(-1, self.hidden_size)
 
-        lstm_out = lstm_out.contiguous().view(-1, self.hidden_size)
-
-        out = self.fc(lstm_out[:, -1, :])
+        out = self.fc(x)
 
         return out

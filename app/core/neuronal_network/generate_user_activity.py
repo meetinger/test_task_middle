@@ -23,7 +23,8 @@ async def generate_activity(user: User, start_date: dt.date, end_date: dt.date, 
 
         req_dt = dt.datetime(year=cur_date.year, month=cur_date.month, day=cur_date.day, hour=1)
 
-        if week_day_idx == cur_date.month % 7:
+        # if week_day_idx == cur_date.month % 7:
+        if week_day_idx == 5:
             # формула активности пользователя в зависимости от месяца
             for i in range(0, random.randint(5, 10)):
                 requests.append(UserActivity(user=user, request_time=req_dt+dt.timedelta(hours=i)))

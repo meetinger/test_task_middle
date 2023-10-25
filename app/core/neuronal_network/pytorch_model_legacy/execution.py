@@ -103,7 +103,7 @@ def train_iteration(full_dataset: UserActivityDataset, model: Net, device=torch.
             print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
                 valid_loss_min,
                 valid_loss))
-            torch.save(model.state_dict(), '../model.pt')
+            torch.save(model.state_dict(), 'model.pt')
             valid_loss_min = valid_loss
 
     plt.clf()
@@ -128,18 +128,20 @@ async def main():
 
         dataset = await UserActivityDataset.from_user(user=user_db, db=db)
 
-    train_iteration(dataset, model=net, device=torch.device('cpu'), lr=1e-3, batch=25, epochs=500)
-    return
+    # train_iteration(dataset, model=net, device=torch.device('cpu'), lr=1e-3, batch=25, epochs=500)
+    # return
 
     # dataloader = DataLoader(dataset)
 
     net.eval()
+    
+    start, end = 0, 50
 
-    x = list(range(len(dataset)))
+    x = list(range(len(dataset)))[start:end]
 
-    y_orig = dataset._y
-    print(dataset._x)
-    y_pred = net(dataset._x).tolist()
+    y_orig = dataset._y[start:end]
+    print(dataset._x[start:end])
+    y_pred = net(dataset._x[start:end]).tolist()
 
     # print(dataset._x)/
     # print(y_pred)
