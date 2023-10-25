@@ -10,8 +10,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 import app.db.crud.users_crud as user_crud
-from app.core.neuronal_network.pytorch_model.dataset import UserActivityDataset
-from app.core.neuronal_network.pytorch_model.net import Net
+from app.core.neuronal_network.pytorch_model_legacy.dataset import UserActivityDataset
+from app.core.neuronal_network.pytorch_model_legacy.net import Net
 from app.db.database import get_db_ctx
 
 
