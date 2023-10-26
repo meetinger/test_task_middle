@@ -59,3 +59,10 @@ class Tokens(BaseModel, Generic[Entity]):
     access_token: str | None = Field(description='Access токен', default=None)
     refresh_token: str | None = Field(description='Refresh токен', default=None)
 
+
+class UserAnalytics(BaseModel):
+    """Аналитика пользователей"""
+
+    last_registered_users: list[UserOutSchema] = Field(description='Последние зарегистрированные пользователи за неделю')
+    top_username_users: list[UserOutSchema] = Field(description='Топ 5 пользователей с самым длинным юзернеймом')
+    email_domain_users_rate: list[UserOutSchema] = Field(description='Доля пользователей по домену электронной почты')

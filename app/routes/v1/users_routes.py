@@ -8,7 +8,7 @@ from app.db.database import get_db
 from app.db.models import User
 from app.routes.v1.auth_routes import get_current_user
 from app.schemas.common_shemas import EntityList
-from app.schemas.users_schemas import UserCreateSchema, UserUpdateSchema, UserOutSchema
+from app.schemas.users_schemas import UserCreateSchema, UserUpdateSchema, UserOutSchema, UserAnalytics
 
 users_router = APIRouter(tags=['users'])
 
@@ -22,7 +22,7 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db),
     return user_db
 
 
-@users_router.get('/', response_model=EntityList)
+@users_router.get('/', response_model=EntityList[UserOutSchema])
 async def get_users(page: int = Query(default=0, description='Номер страницы'),
                     page_size: int = Query(default=10, description='Размер страницы(максимум 50)'),
                     db: AsyncSession = Depends(get_db),
@@ -62,7 +62,7 @@ async def delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db),
     return {'delete': res}
 
 
-@users_router.get('/analytics')
+@users_router.get('/analytics', response_model=UserAnalytics)
 async def user_analytics(email_domain: str = Query(default='gmail.com', description='Домен электронной почты'),
                          current_user: User = Depends(get_current_user),
                          db: AsyncSession = Depends(get_db)):
@@ -72,8 +72,6 @@ async def user_analytics(email_domain: str = Query(default='gmail.com', descript
     top_username_users = await user_crud.get_top5_users_with_longest_usernames(db)
     email_domain_users_rate = await user_crud.get_rate_users_by_email_domain(email_domain, db=db)
 
-    return {
-        'last_registered_users': last_registered_users,
-        'top_username_users': top_username_users,
-        'email_domain_users_rate': email_domain_users_rate
-    }
+    return UserAnalytics(last_registered_users=last_registered_users,
+                         top_username_users=top_username_users,
+                         email_domain_users_rate=email_domain_users_rate)
