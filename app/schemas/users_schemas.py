@@ -37,6 +37,7 @@ class UserCreateSchema(BaseModel, Generic[UserSchema]):
 class UserUpdateSchema(BaseModel, Generic[UserSchema]):
     """Схема для обновления пользователя"""
 
+    id: uuid.UUID = Field(description='ID пользователя')
     username: str | None = Field(description='Имя пользователя', default=None)
     email: EmailStr | None = Field(description='Email пользователя', default=None)
     password: str | None = Field(description='Пароль пользователя', default=None)

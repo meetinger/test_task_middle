@@ -24,8 +24,7 @@ class TestGetTokens:
 
 class TestRefreshTokens:
     async def test_refresh_tokens_ok(self, client: AsyncClient, user, user_token):
-        user_schema = DATASET['users']['1']
-        user_db = await user(user_schema)
+        user_db = await user(DATASET['users']['1'])
         tokens = user_token(user_db)
         resp = await client.post('v1/auth/refresh_token', json=tokens)
         assert resp.status_code == status.HTTP_200_OK
