@@ -70,10 +70,6 @@ async def get_tokens(user: UserAuthSchema, db: AsyncSession = Depends(get_db)) -
 async def refresh_tokens(tokens: Tokens, db: AsyncSession = Depends(get_db)) -> Tokens:
     """Обновить токены"""
 
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials",
-    )
     try:
         payload = TokenUtils.decode_token(tokens.refresh_token)
         username = payload['sub']
@@ -82,8 +78,6 @@ async def refresh_tokens(tokens: Tokens, db: AsyncSession = Depends(get_db)) -> 
             raise HTTPException(status_code=403, detail='Wrong token type')
     except ExpiredSignatureError:
         raise HTTPException(status_code=403, detail='Token expired')
-    except Exception as e:
-        raise credentials_exception
     user_db = await user_crud.get_user_by_username(username=username, db=db)
     try:
         tokens = create_tokens(user_db)

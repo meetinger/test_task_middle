@@ -63,6 +63,6 @@ class Tokens(BaseModel, Generic[Entity]):
 class UserAnalytics(BaseModel):
     """Аналитика пользователей"""
 
-    last_registered_users: list[UserOutSchema] = Field(description='Последние зарегистрированные пользователи за неделю')
+    last_registered_users: int = Field(description='Последние зарегистрированные пользователи за неделю')
     top_username_users: list[UserOutSchema] = Field(description='Топ 5 пользователей с самым длинным юзернеймом')
-    email_domain_users_rate: list[UserOutSchema] = Field(description='Доля пользователей по домену электронной почты')
+    email_domain_users_rate: float = Field(description='Доля пользователей по домену электронной почты')
