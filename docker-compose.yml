@@ -1,0 +1,98 @@
+version: "3.3"
+services:
+  postgres_db:
+    env_file:
+      - .env
+    container_name: test_task_postgres_db
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: "pgdata"
+    volumes:
+      - ./postgres:/postgres
+    ports:
+      - ${DB_PORT}:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - postgres
+
+  postgres_test_db:
+    env_file:
+      - .env
+    container_name: test_task_postgres_test_db
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_TEST_NAME}
+      POSTGRES_USER: ${DB_TEST_USER}
+      POSTGRES_PASSWORD: ${DB_TEST_PASSWORD}
+      PGDATA: "pgdata"
+    volumes:
+      - ./postgres:/postgres
+    ports:
+      - ${DB_TEST_PORT}:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - postgres
+
+  migration:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - .:/docker_app
+    networks:
+      - postgres
+    command: python -m alembic upgrade head
+
+  fast_api_app:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    container_name: fast_api_app_container
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      migration:
+        condition: service_started
+    volumes:
+      - .:/docker_app
+    ports:
+      - ${HTTP_PORT}:${HTTP_PORT}
+    networks:
+      - postgres
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port ${HTTP_PORT}
+
+#  unit_test:
+#    build:
+#      context: "."
+#      dockerfile: Dockerfile
+#    depends_on:
+#      postgres_test_db:
+#        condition: service_healthy
+#    env_file:
+#      - .env
+#    volumes:
+#      - .:/docker_app
+#    networks:
+#      - postgres
+#    command: python -m pytest
+
+networks:
+  postgres:
+    driver: bridge
