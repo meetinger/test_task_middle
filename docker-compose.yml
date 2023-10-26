@@ -1,6 +1,8 @@
 version: "3.3"
 services:
   postgres_db:
+    env_file:
+      - .env
     container_name: test_task_postgres_db
     image: postgres:16
     environment:
@@ -21,6 +23,8 @@ services:
       - postgres
 
   postgres_test_db:
+    env_file:
+      - .env
     container_name: test_task_postgres_test_db
     image: postgres:16
     environment:
@@ -39,6 +43,39 @@ services:
       retries: 5
     networks:
       - postgres
+
+  migration:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - .:/docker_app
+    networks:
+      - postgres
+    command: python -m alembic upgrade head
+
+  fast_api_app:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    container_name: fast_api_app_container
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      migration:
+        condition: service_started
+      postgres_db:
+        condition: service_healthy
+    volumes:
+      - .:/docker_app
+    ports:
+      - ${HTTP_PORT}:${HTTP_PORT}
+    networks:
+      - postgres
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port ${HTTP_PORT}
 
 networks:
   postgres:
