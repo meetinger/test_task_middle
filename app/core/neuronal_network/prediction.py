@@ -1,8 +1,10 @@
 import asyncio
+import random
 import uuid
 
 import numpy as np
 import pandas as pd
+import torch
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -11,50 +13,82 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 import datetime as dt
 
+from torch import nn
+from torch.utils.data import DataLoader
+
 import app.db.crud.users_crud as user_crud
-from app.core.neuronal_network.dataset import load_dataset_by_user
+from app.core.neuronal_network.dataset import load_dataset_by_user, UserActivityDataset
+from app.core.neuronal_network.net import Net
 from app.db.database import get_db_ctx
 
 
 async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
-    # x_train, x_test, y_train, y_test = train_test_split(dataset[0], dataset[1], test_size=0.2, shuffle=False,
-    #                                                     random_state=0)
+    seed = 42
+
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
 
     x, y = dataset
-    #x datetime.date list
-    #y int list
 
-    # x = np.array(x)
-    # y = np.array(y)
-    df = pd.DataFrame({'y': y}, index=x)
+    dataset_obj = UserActivityDataset(x, y)
 
-    df = df.asfreq('D')
+    model = Net()
 
-    # model = SARIMAX(y, order=(1, 1, 0), seasonal_order=(1, 1, 0, 30), trend='n', dates=x)
+    learning_rate = 1e-7
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
-    df = df.head(100)
+    batch_size = 32
+    dataloader = DataLoader(dataset_obj, batch_size=batch_size, shuffle=True)
 
-    model = ARIMA(df, order=(1, 1, 0),  trend='n')
-    model_fit = model.fit()
+    num_epochs = 256
 
-    test_range = list(range(len(x)))
+    train_losses = []
+    test_losses = []
 
-    start, end = 100, 150
+    # Обучение модели
+    for epoch in range(num_epochs):
+        for i, data in enumerate(dataloader):
+            inputs, labels = data
+            optimizer.zero_grad()
+            outputs = model(inputs)  # Передача актуального значения hidden state
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-    forecast = model_fit.predict(start=start+1, end=end)
+            train_losses.append(loss.item())
 
-    plt.plot(test_range[start:end], forecast, label='predicted',
-             color='red')
+            # if i == 0:
+            #     with torch.no_grad():
+            #         test_inputs, test_labels = iter(dataloader).next()
+            #         test_hidden = torch.zeros(model.num_layers, batch_size, model.hidden_size)
+            #         test_outputs, _ = model(test_inputs, test_hidden)  # Передача актуального значения hidden state
+            #         test_loss = criterion(test_outputs, test_labels)
+            #         test_losses.append(test_loss.item())
 
-    plt.plot(test_range[start:end], y[start:end], label='real', color='blue')
-    plt.legend(loc='best')
-    plt.title('Predicted vs Real')
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}, '
+              # f'Test Loss: {test_loss.item():.4f}'
+              )
+
+    # Построение графика лосса
+    plt.plot(train_losses, label='Training loss')
+    plt.plot(test_losses, label='Testing loss')
+    plt.legend(frameon=False)
     plt.show()
+
+    # Сравнение оригинала с предсказанием
+    with torch.no_grad():
+        for i in range(10):
+            inputs, label = dataset_obj.x[i], dataset_obj.y[i]
+            output = model(inputs.unsqueeze(0))
+            # print(output)
+            print(f"Original: {label.item()}, Predicted: {output.view(-1).item()}")
 
 
 async def main():
     async with get_db_ctx() as db:
-        user_db = await user_crud.get_user(uuid.UUID('713d523a-4265-40ec-b42f-3a6474236892'), db)
+        user_db = await user_crud.get_user(uuid.UUID('a1873206-c474-4582-a246-52bf45cec1a4'), db)
 
         dataset = await load_dataset_by_user(user=user_db, db=db)
 

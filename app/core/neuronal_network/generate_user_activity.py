@@ -43,7 +43,7 @@ async def generate_activity(user: User, start_date: dt.date, end_date: dt.date, 
 async def main():
     async with get_db_ctx() as db:
 
-        user_db = await user_crud.get_user(uuid.UUID('713d523a-4265-40ec-b42f-3a6474236892'), db)
+        user_db = await user_crud.get_user(uuid.UUID('a1873206-c474-4582-a246-52bf45cec1a4'), db)
 
         await generate_activity(user_db, dt.datetime(year=2020, month=10, day=1),
                                 dt.datetime(year=2023, month=12, day=1), db=db)

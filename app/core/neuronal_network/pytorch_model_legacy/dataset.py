@@ -32,7 +32,6 @@ class UserActivityDataset(Dataset):
         self._x = torch.tensor(x, dtype=torch.float)
         self._y = torch.tensor(y, dtype=torch.float)
 
-
     def __getitem__(self, idx):
         """Метод, необходимый для синтаксиса obj[idx]"""
         res = self._x[idx], self._y[idx]
