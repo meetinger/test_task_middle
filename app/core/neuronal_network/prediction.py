@@ -34,11 +34,11 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
 
     model = Net()
 
-    num_epochs = 32
-    batch_size = 16
+    num_epochs = 3
+    batch_size = 64
     learning_rate = 1e-2
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
     scheduler1 = ExponentialLR(optimizer, gamma=0.9)
     # scheduler2 = MultiStepLR(optimizer, milestones=[30, 80], gamma=0.1)
@@ -47,7 +47,9 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
     train_size = int(0.7 * len(full_data))
     val_size = len(full_data) - train_size
 
-    train_dataset, val_dataset = torch.utils.data.random_split(full_data, [train_size, val_size])
+    # train_dataset, val_dataset = torch.utils.data.random_split(full_data, [train_size, val_size])
+    train_dataset = torch.utils.data.Subset(full_data, range(train_size))
+    val_dataset = torch.utils.data.Subset(full_data, range(train_size, train_size+val_size))
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
