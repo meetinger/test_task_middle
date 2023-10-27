@@ -5,7 +5,7 @@ import datetime as dt
 
 import numpy as np
 import torch
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sqlalchemy.ext.asyncio import AsyncSession
 from torch.utils.data import Dataset
 
@@ -30,8 +30,8 @@ class UserActivityDataset(Dataset):
     def __init__(self, x: list[list[int]], y: list[list[int]]):
         """Инит метод"""
 
-        self.x_scaler = StandardScaler()
-        self.y_scaler = StandardScaler()
+        self.x_scaler = MinMaxScaler(feature_range=(0,1))
+        self.y_scaler = MinMaxScaler(feature_range=(0,1))
 
         # x = self.x_scaler.fit_transform(x)
         # y = self.y_scaler.fit_transform(y)
@@ -75,6 +75,8 @@ async def load_dataset_by_user(user: User, db: AsyncSession):
     x, y = zip(*sorted(counter.items()))
 
     x = [[d.day, d.isocalendar()[1], d.month, d.year] for d in x]
+    # x = [[d.day, d.month, d.year] for d in x]
+    # x = [[d.day, d.isocalendar()[1], d.month] for d in x]
     y = [[r] for r in y]
 
     return x, y

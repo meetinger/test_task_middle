@@ -14,6 +14,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 import datetime as dt
 
 from torch import nn
+from torch.optim.lr_scheduler import ExponentialLR, MultiStepLR
 from torch.utils.data import DataLoader
 
 import app.db.crud.users_crud as user_crud
@@ -35,14 +36,17 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
 
     model = Net()
 
-    learning_rate = 1e-7
+    learning_rate = 1e-3
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
-    batch_size = 32
-    dataloader = DataLoader(dataset_obj, batch_size=batch_size, shuffle=True)
+    # scheduler1 = ExponentialLR(optimizer, gamma=0.8)
+    # scheduler2 = MultiStepLR(optimizer, milestones=[30, 80], gamma=0.1)
 
-    num_epochs = 256
+    batch_size = 128
+    dataloader = DataLoader(dataset_obj, batch_size=batch_size, shuffle=False)
+
+    num_epochs = 32
 
     train_losses = []
     test_losses = []
@@ -70,6 +74,8 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
         print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}, '
               # f'Test Loss: {test_loss.item():.4f}'
               )
+        # scheduler1.step()
+        # scheduler2.step()
 
     # Построение графика лосса
     plt.plot(train_losses, label='Training loss')
@@ -78,12 +84,37 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
     plt.show()
 
     # Сравнение оригинала с предсказанием
-    with torch.no_grad():
-        for i in range(10):
+
+    test_len = 200
+
+    x_axis = []
+
+    y_orig = []
+    y_pred = []
+
+    with (torch.no_grad()):
+        for i in range(test_len):
             inputs, label = dataset_obj.x[i], dataset_obj.y[i]
             output = model(inputs.unsqueeze(0))
             # print(output)
-            print(f"Original: {label.item()}, Predicted: {output.view(-1).item()}")
+
+            # unscale_x = dataset_obj.x_scaler.inverse_transform(inputs.unsqueeze(0))
+            # unscale_y_orig = dataset_obj.y_scaler.inverse_transform([[label.item()]])[0][0]
+            # unscale_y_pred = dataset_obj.y_scaler.inverse_transform([[output.view(-1).item()]])[0][0]
+
+            unscale_x = inputs.unsqueeze(0)
+            unscale_y_orig = label.item()
+            unscale_y_pred = output.view(-1).item()
+
+            y_orig.append(unscale_y_orig)
+            y_pred.append(unscale_y_pred)
+
+            print(f"Original: {unscale_y_orig}, Predicted: {unscale_y_pred}")
+
+    plt.plot(list(range(test_len)), y_orig, label='Orig')
+    plt.plot(list(range(test_len)), y_pred, label='Pred')
+    plt.legend()
+    plt.show()
 
 
 async def main():
@@ -94,6 +125,7 @@ async def main():
 
     await predict(dataset, start_date=dt.date(year=2023, month=2, day=24),
                   end_date=dt.date.today())
+
 
 if __name__ == '__main__':
     asyncio.run(main())
