@@ -6,7 +6,7 @@
 1. Склонируйте репозиторий командой `git clone`
 2. Установите Python 3.11, Poetry, Docker, Docker-Compose
 3. Запустите команду `poetry install` для установки зависимостей(в случае проблем, попробуйте удалить poetry.lock)
-4. (Необязательно) Настройте переменные окружения в `.env` и отредактируйте Dockerfile, docker-compose.yml на свой вкус
+4. (Необязательно) Настройте переменные окружения в `.env` `.env.docker` и отредактируйте Dockerfile, docker-compose.yml на свой вкус
 5. Запустите приложение командой `sudo docker compose up -d`
 6. Используйте API, документация находится по адресу `http://localhost:8888/redoc`
 

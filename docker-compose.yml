@@ -67,6 +67,7 @@ services:
     restart: always
     env_file:
       - .env
+      - .env.docker
     depends_on:
       migration:
         condition: service_started
