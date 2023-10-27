@@ -32,54 +32,65 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
 
     x, y = dataset
 
-    dataset_obj = UserActivityDataset(x, y)
-
     model = Net()
 
+    num_epochs = 32
+    batch_size = 16
     learning_rate = 1e-2
     criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    scheduler1 = ExponentialLR(optimizer, gamma=0.8)
+    scheduler1 = ExponentialLR(optimizer, gamma=0.9)
     # scheduler2 = MultiStepLR(optimizer, milestones=[30, 80], gamma=0.1)
 
-    batch_size = 128
-    dataloader = DataLoader(dataset_obj, batch_size=batch_size, shuffle=False)
+    full_data = UserActivityDataset(x, y)
+    train_size = int(0.7 * len(full_data))
+    val_size = len(full_data) - train_size
 
-    num_epochs = 8
+    train_dataset, val_dataset = torch.utils.data.random_split(full_data, [train_size, val_size])
+
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     train_losses = []
-    test_losses = []
+    val_losses = []
 
     # Обучение модели
     for epoch in range(num_epochs):
-        for i, data in enumerate(dataloader):
-            inputs, labels = data
+
+        train_loss = 0.0
+        model.train()
+        for data, labels in train_dataloader:
+
             optimizer.zero_grad()
-            outputs = model(inputs)  # Передача актуального значения hidden state
+            outputs = model(data)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+            train_loss += loss.item() * data.size(0)
 
-            train_losses.append(loss.item())
+        val_loss = 0.0
+        model.eval()
+        for data, labels in val_dataloader:
+            outputs = model(data)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item() * data.size(0)
 
-            # if i == 0:
-            #     with torch.no_grad():
-            #         test_inputs, test_labels = iter(dataloader).next()
-            #         test_hidden = torch.zeros(model.num_layers, batch_size, model.hidden_size)
-            #         test_outputs, _ = model(test_inputs, test_hidden)  # Передача актуального значения hidden state
-            #         test_loss = criterion(test_outputs, test_labels)
-            #         test_losses.append(test_loss.item())
+        train_loss /= len(train_dataloader)
+        val_loss /= len(val_dataloader)
 
-        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}, '
-              # f'Test Loss: {test_loss.item():.4f}'
-              )
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+
+
+        print(f'Epoch {epoch+1} \n Train Loss: {train_loss / len(train_dataloader)} \n Val Loss: {val_loss / len(val_dataloader)}')
         scheduler1.step()
         # scheduler2.step()
 
     # Построение графика лосса
-    plt.plot(train_losses, label='Training loss')
-    plt.plot(test_losses, label='Testing loss')
+    plt.plot(list(range(0, num_epochs)), train_losses, label='Train loss')
+    plt.plot(list(range(0, num_epochs)), val_losses, label='Valid loss')
+    plt.yscale('log')
     plt.legend(frameon=False)
     plt.show()
 
@@ -92,17 +103,18 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
     y_orig = []
     y_pred = []
 
+    model.eval()
     with (torch.no_grad()):
         for i in range(test_len):
-            inputs, label = dataset_obj.x[i], dataset_obj.y[i]
-            output = model(inputs.unsqueeze(0))
+            data, label = full_data.x[i], full_data.y[i]
+            output = model(data.unsqueeze(0))
             # print(output)
 
             # unscale_x = dataset_obj.x_scaler.inverse_transform(inputs.unsqueeze(0))
             # unscale_y_orig = dataset_obj.y_scaler.inverse_transform([[label.item()]])[0][0]
             # unscale_y_pred = dataset_obj.y_scaler.inverse_transform([[output.view(-1).item()]])[0][0]
 
-            unscale_x = inputs.unsqueeze(0)
+            unscale_x = data.unsqueeze(0)
             unscale_y_orig = label.item()
             unscale_y_pred = output.view(-1).item()
 
