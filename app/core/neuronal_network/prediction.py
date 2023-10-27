@@ -36,17 +36,17 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
 
     model = Net()
 
-    learning_rate = 1e-3
+    learning_rate = 1e-2
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
-    # scheduler1 = ExponentialLR(optimizer, gamma=0.8)
+    scheduler1 = ExponentialLR(optimizer, gamma=0.8)
     # scheduler2 = MultiStepLR(optimizer, milestones=[30, 80], gamma=0.1)
 
     batch_size = 128
     dataloader = DataLoader(dataset_obj, batch_size=batch_size, shuffle=False)
 
-    num_epochs = 32
+    num_epochs = 8
 
     train_losses = []
     test_losses = []
@@ -74,7 +74,7 @@ async def predict(dataset: tuple, start_date: dt.date, end_date: dt.date):
         print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}, '
               # f'Test Loss: {test_loss.item():.4f}'
               )
-        # scheduler1.step()
+        scheduler1.step()
         # scheduler2.step()
 
     # Построение графика лосса
